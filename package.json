@@ -1,0 +1,53 @@
+{
+  "name": "electron-docx",
+  "version": "1.0.0",
+  "description": "Word文档批量转换为HTML的Electron应用",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder",
+    "dist": "electron-builder --publish=never"
+  },
+  "keywords": [
+    "electron",
+    "word",
+    "html",
+    "converter",
+    "docx"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.6.4"
+  },
+  "dependencies": {
+    "mammoth": "^1.6.0",
+    "fs-extra": "^11.1.1",
+    "path": "^0.12.7"
+  },
+  "build": {
+    "appId": "com.example.electron-docx",
+    "productName": "Word to HTML Converter",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!node_modules/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "assets/icon.icns"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "assets/icon.png"
+    }
+  }
+}
