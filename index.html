@@ -185,6 +185,117 @@
             background: #f8f9fa;
         }
 
+        /* 转换选项样式 */
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .option-group {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid #e9ecef;
+        }
+
+        .option-group h3 {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            color: #2c3e50;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 5px;
+        }
+
+        .option-item {
+            margin-bottom: 12px;
+        }
+
+        .option-item label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .option-item input[type="text"],
+        .option-item input[type="number"],
+        .option-item select,
+        .option-item textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .option-item input[type="text"]:focus,
+        .option-item input[type="number"]:focus,
+        .option-item select:focus,
+        .option-item textarea:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        .option-item input[type="checkbox"] {
+            margin-right: 8px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .checkbox-group label {
+            margin-bottom: 0;
+            cursor: pointer;
+        }
+
+        .color-picker {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .color-picker input[type="color"] {
+            width: 40px;
+            height: 30px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .preset-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .preset-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .preset-btn:hover {
+            background: #5a6268;
+            transform: translateY(-1px);
+        }
+
+        .preset-btn.active {
+            background: #3498db;
+        }
+
         .progress-section {
             margin-top: 20px;
         }
@@ -293,6 +404,10 @@
                 flex-direction: column;
                 align-items: stretch;
             }
+
+            .options-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -333,6 +448,175 @@
                 <div class="output-section">
                     <input type="text" class="output-path" id="outputPath" placeholder="选择输出目录..." readonly>
                     <button class="btn btn-secondary" id="selectOutputBtn">选择目录</button>
+                </div>
+            </div>
+
+            <!-- 转换选项 -->
+            <div class="section">
+                <h2 class="section-title">⚙️ 转换选项</h2>
+                
+                <!-- 预设按钮 -->
+                <div class="preset-buttons">
+                    <button class="preset-btn active" data-preset="default">默认设置</button>
+                    <button class="preset-btn" data-preset="clean">简洁样式</button>
+                    <button class="preset-btn" data-preset="professional">专业样式</button>
+                    <button class="preset-btn" data-preset="print">打印优化</button>
+                    <button class="preset-btn" data-preset="web">网页优化</button>
+                </div>
+
+                <div class="options-grid">
+                    <!-- 样式选项 -->
+                    <div class="option-group">
+                        <h3>🎨 样式设置</h3>
+                        
+                        <div class="option-item">
+                            <label>字体族</label>
+                            <select id="fontFamily">
+                                <option value="'Microsoft YaHei', Arial, sans-serif">微软雅黑 (默认)</option>
+                                <option value="'SimSun', serif">宋体</option>
+                                <option value="'SimHei', sans-serif">黑体</option>
+                                <option value="Arial, sans-serif">Arial</option>
+                                <option value="'Times New Roman', serif">Times New Roman</option>
+                            </select>
+                        </div>
+
+                        <div class="option-item">
+                            <label>字体大小 (px)</label>
+                            <input type="number" id="fontSize" value="16" min="10" max="24">
+                        </div>
+
+                        <div class="option-item">
+                            <label>行高</label>
+                            <input type="number" id="lineHeight" value="1.6" min="1" max="3" step="0.1">
+                        </div>
+
+                        <div class="option-item">
+                            <label>页面边距 (px)</label>
+                            <input type="number" id="pageMargin" value="40" min="10" max="100">
+                        </div>
+
+                        <div class="option-item">
+                            <label>文字颜色</label>
+                            <div class="color-picker">
+                                <input type="color" id="textColor" value="#333333">
+                                <span id="textColorValue">#333333</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 标题样式 -->
+                    <div class="option-group">
+                        <h3>📝 标题样式</h3>
+                        
+                        <div class="option-item">
+                            <label>标题颜色</label>
+                            <div class="color-picker">
+                                <input type="color" id="headingColor" value="#2c3e50">
+                                <span id="headingColorValue">#2c3e50</span>
+                            </div>
+                        </div>
+
+                        <div class="option-item">
+                            <label>标题间距 (px)</label>
+                            <input type="number" id="headingMargin" value="30" min="10" max="50">
+                        </div>
+
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="headingBold" checked>
+                            <label for="headingBold">标题加粗</label>
+                        </div>
+
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="headingUnderline">
+                            <label for="headingUnderline">标题下划线</label>
+                        </div>
+                    </div>
+
+                    <!-- 表格样式 -->
+                    <div class="option-group">
+                        <h3>📊 表格样式</h3>
+                        
+                        <div class="option-item">
+                            <label>表格边框颜色</label>
+                            <div class="color-picker">
+                                <input type="color" id="tableBorderColor" value="#ddd">
+                                <span id="tableBorderColorValue">#ddd</span>
+                            </div>
+                        </div>
+
+                        <div class="option-item">
+                            <label>表头背景色</label>
+                            <div class="color-picker">
+                                <input type="color" id="tableHeaderBg" value="#f2f2f2">
+                                <span id="tableHeaderBgValue">#f2f2f2</span>
+                            </div>
+                        </div>
+
+                        <div class="option-item">
+                            <label>表格内边距 (px)</label>
+                            <input type="number" id="tablePadding" value="8" min="4" max="16">
+                        </div>
+
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="tableStriped" checked>
+                            <label for="tableStriped">斑马纹表格</label>
+                        </div>
+                    </div>
+
+                    <!-- 图片处理 -->
+                    <div class="option-group">
+                        <h3>🖼️ 图片处理</h3>
+                        
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="preserveImages" checked>
+                            <label for="preserveImages">保留图片</label>
+                        </div>
+
+                        <div class="option-item">
+                            <label>图片最大宽度 (%)</label>
+                            <input type="number" id="imageMaxWidth" value="100" min="50" max="200">
+                        </div>
+
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="imageResponsive" checked>
+                            <label for="imageResponsive">响应式图片</label>
+                        </div>
+
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="imageCenter">
+                            <label for="imageCenter">图片居中</label>
+                        </div>
+                    </div>
+
+                    <!-- 高级选项 -->
+                    <div class="option-group">
+                        <h3>🔧 高级选项</h3>
+                        
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="preserveStyles" checked>
+                            <label for="preserveStyles">保留原始样式</label>
+                        </div>
+
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="preserveLists" checked>
+                            <label for="preserveLists">保留列表格式</label>
+                        </div>
+
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="preserveLinks" checked>
+                            <label for="preserveLinks">保留超链接</label>
+                        </div>
+
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="addPageBreaks">
+                            <label for="addPageBreaks">添加分页符</label>
+                        </div>
+
+                        <div class="option-item">
+                            <label>自定义CSS</label>
+                            <textarea id="customCSS" rows="3" placeholder="添加自定义CSS样式..."></textarea>
+                        </div>
+                    </div>
                 </div>
             </div>
 

@@ -11,8 +11,7 @@ function createWindow() {
     height: 800,
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false,
-      enableRemoteModule: true
+      contextIsolation: false
     },
     icon: path.join(__dirname, 'assets', 'icon.png'),
     title: 'Word to HTML Converter',
@@ -44,6 +43,125 @@ app.on('activate', () => {
   }
 });
 
+// 生成CSS样式
+function generateCSS(options) {
+  let css = `
+    body {
+        font-family: ${options.fontFamily};
+        font-size: ${options.fontSize}px;
+        line-height: ${options.lineHeight};
+        margin: ${options.pageMargin}px;
+        color: ${options.textColor};
+    }
+    
+    h1, h2, h3, h4, h5, h6 {
+        color: ${options.headingColor};
+        margin-top: ${options.headingMargin}px;
+        margin-bottom: ${options.headingMargin / 2}px;
+        ${options.headingBold ? 'font-weight: bold;' : ''}
+        ${options.headingUnderline ? 'text-decoration: underline;' : ''}
+    }
+    
+    p {
+        margin-bottom: 15px;
+    }
+    
+    table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 20px 0;
+    }
+    
+    th, td {
+        border: 1px solid ${options.tableBorderColor};
+        padding: ${options.tablePadding}px;
+        text-align: left;
+    }
+    
+    th {
+        background-color: ${options.tableHeaderBg};
+    }
+    
+    ${options.tableStriped ? `
+    tr:nth-child(even) {
+        background-color: rgba(0,0,0,0.02);
+    }
+    ` : ''}
+    
+    img {
+        max-width: ${options.imageMaxWidth}%;
+        height: auto;
+        ${options.imageResponsive ? '' : 'width: auto;'}
+        ${options.imageCenter ? 'display: block; margin: 0 auto;' : ''}
+    }
+    
+    ${options.addPageBreaks ? `
+    .page-break {
+        page-break-before: always;
+    }
+    ` : ''}
+    
+    ${options.customCSS}
+  `;
+  
+  return css;
+}
+
+// 创建mammoth转换选项
+function createMammothOptions(userOptions) {
+  const options = {};
+
+  // 如果不保留原始样式，添加基本样式映射
+  if (!userOptions.preserveStyles) {
+    options.styleMap = [
+      "p[style-name='Heading 1'] => h1:fresh",
+      "p[style-name='Heading 2'] => h2:fresh",
+      "p[style-name='Heading 3'] => h3:fresh",
+      "p[style-name='Heading 4'] => h4:fresh",
+      "p[style-name='Heading 5'] => h5:fresh",
+      "p[style-name='Heading 6'] => h6:fresh",
+      "p[style-name='Normal'] => p:fresh"
+    ];
+  } else {
+    options.styleMap = [];
+  }
+
+  // 如果不保留列表格式
+  if (!userOptions.preserveLists) {
+    options.styleMap.push(
+      "p[style-name='List Paragraph'] => p:fresh"
+    );
+  }
+
+  // 如果不保留超链接
+  if (!userOptions.preserveLinks) {
+    options.transformDocument = (document) => {
+      const elements = document.getElementsByTagName("a");
+      for (let i = elements.length - 1; i >= 0; i--) {
+        const element = elements[i];
+        const text = element.textContent;
+        element.parentNode.replaceChild(document.createTextNode(text), element);
+      }
+      return document;
+    };
+  }
+
+  // 图片处理选项
+  if (userOptions.preserveImages) {
+    options.convertImage = mammoth.images.imgElement((image) => {
+      return image.read().then((imageBuffer) => {
+        const base64 = imageBuffer.toString('base64');
+        const mimeType = image.contentType;
+        return {
+          src: `data:${mimeType};base64,${base64}`
+        };
+      });
+    });
+  }
+
+  return options;
+}
+
 // IPC处理程序
 ipcMain.handle('select-files', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
@@ -62,12 +180,16 @@ ipcMain.handle('select-output-directory', async () => {
   return result.filePaths[0];
 });
 
-ipcMain.handle('convert-file', async (event, filePath, outputPath) => {
+ipcMain.handle('convert-file', async (event, filePath, outputPath, options = {}) => {
   try {
-    const result = await mammoth.convertToHtml({ path: filePath });
+    const mammothOptions = createMammothOptions(options);
+    const result = await mammoth.convertToHtml({ path: filePath, ...mammothOptions });
     const html = result.value;
     
-    // 创建基本的HTML结构
+    // 生成CSS样式
+    const css = generateCSS(options);
+    
+    // 创建完整的HTML结构
     const fullHtml = `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -75,40 +197,7 @@ ipcMain.handle('convert-file', async (event, filePath, outputPath) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${path.basename(filePath, path.extname(filePath))}</title>
     <style>
-        body {
-            font-family: 'Microsoft YaHei', Arial, sans-serif;
-            line-height: 1.6;
-            margin: 40px;
-            color: #333;
-        }
-        h1, h2, h3, h4, h5, h6 {
-            color: #2c3e50;
-            margin-top: 30px;
-            margin-bottom: 15px;
-        }
-        p {
-            margin-bottom: 15px;
-        }
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            margin: 20px 0;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        img {
-            max-width: 100%;
-            height: auto;
-        }
-        .page-break {
-            page-break-before: always;
-        }
+        ${css}
     </style>
 </head>
 <body>
@@ -123,7 +212,7 @@ ipcMain.handle('convert-file', async (event, filePath, outputPath) => {
   }
 });
 
-ipcMain.handle('batch-convert', async (event, files, outputDir) => {
+ipcMain.handle('batch-convert', async (event, files, outputDir, options = {}) => {
   const results = [];
   
   for (const filePath of files) {
@@ -131,8 +220,12 @@ ipcMain.handle('batch-convert', async (event, files, outputDir) => {
       const fileName = path.basename(filePath, path.extname(filePath));
       const outputPath = path.join(outputDir, `${fileName}.html`);
       
-      const result = await mammoth.convertToHtml({ path: filePath });
+      const mammothOptions = createMammothOptions(options);
+      const result = await mammoth.convertToHtml({ path: filePath, ...mammothOptions });
       const html = result.value;
+      
+      // 生成CSS样式
+      const css = generateCSS(options);
       
       const fullHtml = `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -141,40 +234,7 @@ ipcMain.handle('batch-convert', async (event, files, outputDir) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${fileName}</title>
     <style>
-        body {
-            font-family: 'Microsoft YaHei', Arial, sans-serif;
-            line-height: 1.6;
-            margin: 40px;
-            color: #333;
-        }
-        h1, h2, h3, h4, h5, h6 {
-            color: #2c3e50;
-            margin-top: 30px;
-            margin-bottom: 15px;
-        }
-        p {
-            margin-bottom: 15px;
-        }
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            margin: 20px 0;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        img {
-            max-width: 100%;
-            height: auto;
-        }
-        .page-break {
-            page-break-before: always;
-        }
+        ${css}
     </style>
 </head>
 <body>
