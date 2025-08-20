@@ -34,8 +34,12 @@
       "output": "dist"
     },
     "files": [
-      "**/*",
-      "!node_modules/**/*"
+      "main.js",
+      "renderer.js",
+      "index.html",
+      "assets/**/*",
+      "node_modules/**/*",
+      "package.json"
     ],
     "win": {
       "target": [
