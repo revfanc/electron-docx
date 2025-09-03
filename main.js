@@ -1,7 +1,7 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
-const path = require('path');
-const fs = require('fs-extra');
-const mammoth = require('mammoth');
+const { app, BrowserWindow, ipcMain, dialog } = require("electron");
+const path = require("path");
+const fs = require("fs-extra");
+const mammoth = require("mammoth");
 
 let mainWindow;
 
@@ -11,33 +11,33 @@ function createWindow() {
     height: 800,
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false
+      contextIsolation: false,
     },
-    icon: path.join(__dirname, 'assets', 'icon.png'),
-    title: 'Word to HTML Converter',
-    show: false
+    icon: path.join(__dirname, "assets", "icon.png"),
+    title: "Word to HTML Converter",
+    show: false,
   });
 
-  mainWindow.loadFile('index.html');
+  mainWindow.loadFile("index.html");
 
-  mainWindow.once('ready-to-show', () => {
+  mainWindow.once("ready-to-show", () => {
     mainWindow.show();
   });
 
-  mainWindow.on('closed', () => {
+  mainWindow.on("closed", () => {
     mainWindow = null;
   });
 }
 
 app.whenReady().then(createWindow);
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") {
     app.quit();
   }
 });
 
-app.on('activate', () => {
+app.on("activate", () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
   }
@@ -59,8 +59,8 @@ function generateCSS(options) {
         color: ${options.headingColor};
         margin-top: ${options.headingMargin}px;
         margin-bottom: ${options.headingMargin / 2}px;
-        ${options.headingBold ? 'font-weight: bold;' : ''}
-        ${options.headingUnderline ? 'text-decoration: underline;' : ''}
+        ${options.headingBold ? "font-weight: bold;" : ""}
+        ${options.headingUnderline ? "text-decoration: underline;" : ""}
     }
     
     p {
@@ -82,35 +82,68 @@ function generateCSS(options) {
     th {
         background-color: ${options.tableHeaderBg};
     }
+
+    .paragraph-normal {
+        text-align: left;
+    }
+
+    .paragraph-indent {
+        text-align: left;
+        text-indent: 2em;
+    }
+
+    .paragraph-center {
+        text-align: center;
+    }
+
+    .paragraph-right {
+        text-align: right;
+    }
     
-    ${options.tableStriped ? `
+    ${
+      options.tableStriped
+        ? `
     tr:nth-child(even) {
         background-color: rgba(0,0,0,0.02);
     }
-    ` : ''}
+    `
+        : ""
+    }
     
     img {
         max-width: ${options.imageMaxWidth}%;
         height: auto;
-        ${options.imageResponsive ? '' : 'width: auto;'}
-        ${options.imageCenter ? 'display: block; margin: 0 auto;' : ''}
+        ${options.imageResponsive ? "" : "width: auto;"}
+        ${options.imageCenter ? "display: block; margin: 0 auto;" : ""}
     }
     
-    ${options.addPageBreaks ? `
+    ${
+      options.addPageBreaks
+        ? `
     .page-break {
         page-break-before: always;
     }
-    ` : ''}
+    `
+        : ""
+    }
     
     ${options.customCSS}
   `;
-  
+
   return css;
 }
 
 // 创建mammoth转换选项
 function createMammothOptions(userOptions) {
-  const options = {};
+  const options = {
+    styleMap: [
+      // 段落样式 - 保留对齐和缩进
+      "p[style-name='Normal'] => p.paragraph-normal:fresh",
+      "p[style-name='Indent'] => p.paragraph-indent:fresh",
+      "p[style-name='Center'] => p.paragraph-center:fresh",
+      "p[style-name='Right'] => p.paragraph-right:fresh",
+    ],
+  };
 
   // 如果不保留原始样式，添加基本样式映射
   if (!userOptions.preserveStyles) {
@@ -121,7 +154,7 @@ function createMammothOptions(userOptions) {
       "p[style-name='Heading 4'] => h4:fresh",
       "p[style-name='Heading 5'] => h5:fresh",
       "p[style-name='Heading 6'] => h6:fresh",
-      "p[style-name='Normal'] => p:fresh"
+      "p[style-name='Normal'] => p:fresh",
     ];
   } else {
     options.styleMap = [];
@@ -129,9 +162,7 @@ function createMammothOptions(userOptions) {
 
   // 如果不保留列表格式
   if (!userOptions.preserveLists) {
-    options.styleMap.push(
-      "p[style-name='List Paragraph'] => p:fresh"
-    );
+    options.styleMap.push("p[style-name='List Paragraph'] => p:fresh");
   }
 
   // 如果不保留超链接
@@ -151,10 +182,10 @@ function createMammothOptions(userOptions) {
   if (userOptions.preserveImages) {
     options.convertImage = mammoth.images.imgElement((image) => {
       return image.read().then((imageBuffer) => {
-        const base64 = imageBuffer.toString('base64');
+        const base64 = imageBuffer.toString("base64");
         const mimeType = image.contentType;
         return {
-          src: `data:${mimeType};base64,${base64}`
+          src: `data:${mimeType};base64,${base64}`,
         };
       });
     });
@@ -164,34 +195,37 @@ function createMammothOptions(userOptions) {
 }
 
 // IPC处理程序
-ipcMain.handle('select-files', async () => {
+ipcMain.handle("select-files", async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
-    properties: ['openFile', 'multiSelections'],
-    filters: [
-      { name: 'Word Documents', extensions: ['docx', 'doc'] }
-    ]
+    properties: ["openFile", "multiSelections"],
+    filters: [{ name: "Word Documents", extensions: ["docx", "doc"] }],
   });
   return result.filePaths;
 });
 
-ipcMain.handle('select-output-directory', async () => {
+ipcMain.handle("select-output-directory", async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
-    properties: ['openDirectory']
+    properties: ["openDirectory"],
   });
   return result.filePaths[0];
 });
 
-ipcMain.handle('convert-file', async (event, filePath, outputPath, options = {}) => {
-  try {
-    const mammothOptions = createMammothOptions(options);
-    const result = await mammoth.convertToHtml({ path: filePath, ...mammothOptions });
-    const html = result.value;
-    
-    // 生成CSS样式
-    const css = generateCSS(options);
-    
-    // 创建完整的HTML结构
-    const fullHtml = `<!DOCTYPE html>
+ipcMain.handle(
+  "convert-file",
+  async (event, filePath, outputPath, options = {}) => {
+    try {
+      const mammothOptions = createMammothOptions(options);
+      const result = await mammoth.convertToHtml({
+        path: filePath,
+        ...mammothOptions,
+      });
+      const html = result.value;
+
+      // 生成CSS样式
+      const css = generateCSS(options);
+
+      // 创建完整的HTML结构
+      const fullHtml = `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -205,30 +239,36 @@ ipcMain.handle('convert-file', async (event, filePath, outputPath, options = {})
     ${html}
 </body>
 </html>`;
-    
-    await fs.writeFile(outputPath, fullHtml, 'utf8');
-    return { success: true, message: '转换成功' };
-  } catch (error) {
-    return { success: false, message: `转换失败: ${error.message}` };
-  }
-});
 
-ipcMain.handle('batch-convert', async (event, files, outputDir, options = {}) => {
-  const results = [];
-  
-  for (const filePath of files) {
-    try {
-      const fileName = path.basename(filePath, path.extname(filePath));
-      const outputPath = path.join(outputDir, `${fileName}.html`);
-      
-      const mammothOptions = createMammothOptions(options);
-      const result = await mammoth.convertToHtml({ path: filePath, ...mammothOptions });
-      const html = result.value;
-      
-      // 生成CSS样式
-      const css = generateCSS(options);
-      
-      const fullHtml = `<!DOCTYPE html>
+      await fs.writeFile(outputPath, fullHtml, "utf8");
+      return { success: true, message: "转换成功" };
+    } catch (error) {
+      return { success: false, message: `转换失败: ${error.message}` };
+    }
+  }
+);
+
+ipcMain.handle(
+  "batch-convert",
+  async (event, files, outputDir, options = {}) => {
+    const results = [];
+
+    for (const filePath of files) {
+      try {
+        const fileName = path.basename(filePath, path.extname(filePath));
+        const outputPath = path.join(outputDir, `${fileName}.html`);
+
+        const mammothOptions = createMammothOptions(options);
+        const result = await mammoth.convertToHtml({
+          path: filePath,
+          ...mammothOptions,
+        });
+        const html = result.value;
+
+        // 生成CSS样式
+        const css = generateCSS(options);
+
+        const fullHtml = `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -242,22 +282,23 @@ ipcMain.handle('batch-convert', async (event, files, outputDir, options = {}) =>
     ${html}
 </body>
 </html>`;
-      
-      await fs.writeFile(outputPath, fullHtml, 'utf8');
-      results.push({
-        file: path.basename(filePath),
-        success: true,
-        message: '转换成功',
-        outputPath: outputPath
-      });
-    } catch (error) {
-      results.push({
-        file: path.basename(filePath),
-        success: false,
-        message: `转换失败: ${error.message}`
-      });
+
+        await fs.writeFile(outputPath, fullHtml, "utf8");
+        results.push({
+          file: path.basename(filePath),
+          success: true,
+          message: "转换成功",
+          outputPath: outputPath,
+        });
+      } catch (error) {
+        results.push({
+          file: path.basename(filePath),
+          success: false,
+          message: `转换失败: ${error.message}`,
+        });
+      }
     }
+
+    return results;
   }
-  
-  return results;
-});
+);
